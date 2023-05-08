@@ -1,0 +1,141 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="layout :: head(title=~{::title},links=~{})">
+<title>Manage ICD-10 Codes</title>
+</head>
+<body th:include="layout :: body" th:with="content=~{::content}">
+	<div th:fragment="content">
+
+		<script th:inline="javascript">
+		/* Otherwise Thymeleaf tries to parse Javascript as XML and breaks itself sometimes.  Sigh */
+		/*<![CDATA[*/
+			var app = angular.module("manageAdvocatePermissionsApp", []);
+			app.controller('manageAdvocatePermissionsCtrl', function($scope, $http) {
+				$scope.selectedPA = undefined;
+				$scope.reset = function() {
+					$scope.selectedPA = undefined;
+					$http.get("/iTrust2/api/v1/personnel/getbyroles/ROLE_ADVOCATE").then(function(response) {
+						$scope.pas = response.data;
+						console.log(response.data)
+					}, function(rejection) {
+						console.error("Error while getting advocates.");
+					});	
+					
+					$http.get("/iTrust2/api/v1/assignments").then(function(response) {
+						$scope.assignments = response.data;
+						console.log(response.data)
+					}, function(rejection) {
+						console.error("Error while getting assignments.");
+					});	
+
+
+					
+				}
+				
+				$scope.savePerms = function() {
+					$scope.success = false;
+					$scope.failure = false;
+					
+					for (let i = 0; i < $scope.assignments.length; i++) {
+						var x = $scope.assignments[i];
+						if ($scope.selectedPA != undefined && x.patientAdvocate.username == $scope.selectedPA) {
+							$http.put("/iTrust2/api/v1/assignments/permissions/"+x.patient.username+"/"+x.patientAdvocate.username,
+									[x.office_visit_permission, x.billing_permission, x.prescription_permission])
+							.then(function(response) {
+								console.log(response.data);
+								$scope.success = true;
+								$scope.failure = false;
+								$scope.reset();
+							}, function(rejection) {
+								console.error("Error while saving changes.");
+								$scope.success = false;
+								$scope.failure = true;
+							});	
+							if ($scope.failure) {
+								break;
+							}
+						} else {
+							if ($scope.selectedPA == undefined) {
+								$scope.success = false;
+								$scope.failure = true;
+							}
+						}
+					}
+				};
+
+				$scope.reset();
+				
+				
+				
+				
+			});
+			
+			
+			
+			/*]]>*/
+		</script>
+
+		<div ng-app="manageAdvocatePermissionsApp" ng-controller="manageAdvocatePermissionsCtrl as c">
+			<!-- Info on tables from https://hello-angularjs.appspot.com/removetablerow -->
+			<h4 style="color: red" ng-model="message"></h4>
+
+			<h1>Edit Patient Advocate Permissions</h1>
+			<table style="width: 100%">
+				<tr>
+					<td style="vertical-align: top">
+						<table class="table">
+							<tr>
+								<td><h3>Select Patient Advocate</h3></td>
+							</tr>
+							<tr>
+								<td><select ng-model="selectedPA">
+									<option ng-repeat="x in pas">{{x.username}}</option>
+								</select></td>
+								
+							</tr>
+						</table>
+					</td>
+					
+				</tr>
+				<tr>
+					<td style="vertical-align: top">
+						<table class="table">
+							<tr>
+							<h1>View Patient Advocate Assignments</h1>
+							</tr>
+							<tr>
+								<th>Patient Advocate</th>
+								<th>Patient</th>
+								<th>Permissions</th>
+							</tr>
+							<tr ng-repeat="x in assignments" ng-if="selectedPA != undefined && x.patientAdvocate.username == selectedPA">
+								<td>{{x.patientAdvocate.username}}</td>
+								<td>{{x.patient.username}}</td>
+								<td><div >
+								<input type="checkbox" id='pres' ng-model="x.prescription_permission">
+								<label for="pres"> Prescriptions </label><br>
+								<input type="checkbox" id='bill' ng-model="x.billing_permission">
+								<label for="bill"> Billing </label><br>
+								<input type="checkbox" id='offvis' ng-model="x.office_visit_permission">
+								<label for="offvis"> Office Visits </label><br>
+								</div></td>
+							</tr>
+							<tr>
+							<td></td>
+							<td></td>
+							<td>
+							<input type="button" value="Save Changes"
+									class="btn btn-primary" ng-click="savePerms()" />
+									<div ng-show="success">Saved successfully.</div>
+									<div ng-show="failure">Error saving changes.</div>
+							</td>
+							</tr>
+						</table>
+					</td>
+					
+					
+				</tr>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

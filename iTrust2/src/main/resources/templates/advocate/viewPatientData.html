@@ -1,0 +1,349 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="layout :: head(title=~{::title},links=~{})">
+<title>View Patient Data</title>
+</head>
+<body th:include="layout :: body" th:with="content=~{::content}">
+	<div th:fragment="content">
+
+		<script th:inline="javascript">
+			/* Otherwise Thymeleaf tries to parse Javascript as XML and breaks itself sometimes.  Sigh */
+			/*<![CDATA[*/
+			var app = angular.module("viewPatientDataApp", []);
+			app
+					.controller(
+							'viewPatientDataCtrl',
+							function($scope, $http) {
+								$scope.created = [];
+								$scope.showVisit = false;
+								$scope.showPres = false;
+								$scope.showBill = false;
+								$scope.prescriptions = [];
+								$scope.pattern = /^\d{4}-\d{4}-\d{2}$/;
+								$scope.selected = false;
+
+								$scope.choose = function() {
+									$http
+									.get("/iTrust2/api/v1/assignments")
+									.then(
+											function(response) {
+												$scope.created = response.data;
+												console
+														.log($scope.created);
+												var y;
+												for(let i = 0; i < $scope.created.length; i++){
+													var x = $scope.created[i];
+													if(x.patient.username === $scope.selectedPat && x.patientAdvocate.username === $scope.selectedPA){
+														y = x;
+													}
+												}
+												console.log(y);
+												if(y == null){
+													$scope.showVisit = false;
+													$scope.showPres = false;
+													$scope.showBill = false;
+												}
+												else{
+													$scope.showVisit = y.office_visit_permission;
+													$scope.showPres = y.prescription_permission;
+													$scope.showBill = y.billing_permission;
+												}
+												
+											});
+									$http
+											.get(
+													"/iTrust2/api/v1/officevisits/patient/"
+															+ $scope.selectedPat)
+											.then(
+													function(response) {
+														$scope.visits = response.data;
+														console
+																.log($scope.visits);
+														$scope.selected = true;
+													},
+													function(rejection) {
+														console
+																.error("Error while getting office visit");
+													});
+
+									$scope.loadPrescriptions = function() {
+										$http
+												.get(
+														"/iTrust2/api/v1/prescriptions/advocate/"
+																+ $scope.selectedPat)
+												.then(
+														function(response) {
+															$scope.prescriptions = response.data;
+
+															$scope.message = "";
+														},
+														function(rejection) {
+															$scope.prescriptions = [];
+															$scope.message = "Could not display prescriptions";
+														});
+									}
+									$scope.loadPrescriptions();
+
+									$scope.bills = [];
+									$scope.loadBills = function() {
+										$http
+												.get(
+														"/iTrust2/api/v1/bills/"
+																+ $scope.selectedPat)
+												.then(
+														function(response) {
+															$scope.bills = response.data;
+															$scope.errorMsg = "";
+														},
+														function(rejection) {
+															$scope.bills = [];
+															$scope.errorMsg = "Could not display bills.";
+														});
+									}
+
+									$scope.loadBills();
+
+								}
+
+								$scope.reset = function() {
+									$scope.created = [];
+									$scope.showVisit = false;
+									$scope.showPres = false;
+									$scope.showBill = false;
+									$scope.prescriptions = [];
+									$scope.pattern = /^\d{4}-\d{4}-\d{2}$/;
+									$scope.selected = false;
+									$http
+											.get(
+													"/iTrust2/api/v1/users/current")
+											.then(
+													function(response) {
+
+														$scope.selectedPA = response.data.username;
+
+													},
+													function(rejection) {
+														console
+																.error("Error while getting current user");
+													});
+
+									// reuse
+
+									$scope.selectedPat = undefined;
+
+									$http
+											.get(
+													"/iTrust2/api/v1/personnel/getbyroles/ROLE_ADVOCATE")
+											.then(
+													function(response) {
+														$scope.pas = response.data;
+													},
+													function(rejection) {
+														console
+																.error("Error while getting advocates.");
+													});
+
+									$http
+											.get("/iTrust2/api/v1/patients")
+											.then(
+													function(response) {
+														$scope.pats = response.data;
+													},
+													function(rejection) {
+														console
+																.error("Error while getting patients.");
+													});
+
+									$http
+											.get("/iTrust2/api/v1/assignments")
+											.then(
+													function(response) {
+														$scope.created = response.data;
+														console
+																.log($scope.created);
+														$scope.createdPats = new Set();
+														$scope.createdPAs = new Set();
+														$scope.patMap = new Map();
+
+														$scope.PAMap = new Map();
+														
+														for (let i = 0; i < $scope.created.length; i++) {
+															var x = $scope.created[i];
+															
+															if (!$scope.patMap
+																	.has(x.patient.username)) {
+																$scope.patMap
+																		.set(
+																				x.patient.username,
+																				new Array());
+															}
+															if (!$scope.PAMap
+																	.has(x.patientAdvocate.username)) {
+																$scope.PAMap
+																		.set(
+																				x.patientAdvocate.username,
+																				new Array());
+															}
+															$scope.patMap
+																	.get(
+																			x.patient.username)
+																	.push(
+																			x.patientAdvocate.username);
+															$scope.PAMap
+																	.get(
+																			x.patientAdvocate.username)
+																	.push(
+																			x.patient.username);
+															$scope.createdPAs
+																	.add(x.patientAdvocate.username)
+															$scope.createdPats
+																	.add(x.patient.username)
+														}
+
+													},
+													function(rejection) {
+														console
+																.error("Error while getting patients.");
+													});
+									//through here
+
+								}
+								$scope.reset();
+
+							});
+
+			/*]]>*/
+		</script>
+		<div ng-app="viewPatientDataApp"
+			ng-controller="viewPatientDataCtrl as c">
+			<!-- Info on tables from https://hello-angularjs.appspot.com/removetablerow -->
+			<h4 style="color: red" ng-model="message"></h4>
+
+			<h1>View Patient Data</h1>
+			<table style="width: 100%">
+				<tr>
+					<td style="vertical-align: top">
+						<table class="table">
+							<tr>
+								<td><h3>Patient</h3></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><select ng-change="choose()" ng-model="selectedPat">
+										<option
+											ng-if="!(PAMap.has(selectedPA)) || !(PAMap.get(selectedPA).includes(x.username)))">No
+											Patients to View</option>
+										<option ng-repeat="x in pats"
+											ng-if="PAMap.has(selectedPA) && PAMap.get(selectedPA).includes(x.username)">{{x.username}}</option>
+								</select></td>
+
+							</tr>
+						</table>
+					</td>
+
+				</tr>
+			</table>
+			<div ng-show="selected && !showVisit && !showPres && !showBill">
+				<div>You have no permissions allowed</div>
+			</div>
+			<div ng-show="selected && showVisit">
+				<table class="table table-bordered">
+
+					<thead>
+						<tr>
+							<th>Date</th>
+							<th>Time</th>
+							<th>Provider</th>
+							<th>Location</th>
+							<th>Patient Advocate Presence?</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr name="officeVisitsTableRow"
+							ng-repeat="v in visits | orderBy: '-date'" visitId={{v.id}}>
+							<td name="dateCell">{{v.date | date : 'MM/dd/yyyy'}}</td>
+							<td name="timeCell">{{v.date | date : 'shortTime'}}</td>
+							<td name="providerCell">{{v.hcp.username}}</td>
+							<td name="locationCell">{{v.hospital.name}}</td>
+							<td name="advocateCell"
+								ng-if="v.patientAdvocatesPresent.length > 0">Yes</td>
+							<td name="advocateCell"
+								ng-if="v.patientAdvocatesPresent.length === 0">No</td>
+
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div ng-show="selected && showPres" class="container">
+				<div class="row">
+					<div class="col-md-12">
+						<div class="panel panel-primary">
+							<div class="panel-heading">
+								<h3>Advocate View Prescriptions</h3>
+							</div>
+							<div class="panel-body">
+								<table class="table table-bordered">
+									<caption>Patient Prescriptions:</caption>
+									<thead>
+										<tr>
+											<th>Drug</th>
+											<th>Dosage (mg)</th>
+											<th>Start Date</th>
+											<th>End Date</th>
+											<th>Renewals</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr name="prescriptionTableRow"
+											ng-repeat="p in prescriptions | orderBy: 'drug'"
+											prescriptionId={{p.id}}>
+											<td name="drugCell">{{p.drug.name}}</td>
+											<td name="codeCell">{{p.dosage}}</td>
+											<td name="startCell">{{p.startDate | date :
+												'MM/dd/yyyy'}}</td>
+											<td name="endCell">{{p.endDate | date : 'MM/dd/yyyy'}}</td>
+											<td name="renewalsCell">{{p.renewals}}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="container" ng-show="selected && showBill">
+				<div class="row">
+					<div class="col-md-12">
+						<div class="panel panel-primary">
+							<div class="panel-heading">
+								<h3>View Bills</h3>
+							</div>
+							<div class="panel-body">
+								<table class="table table-bordered">
+
+
+									<thead>
+										<tr>
+											<th>Bill Date</th>
+											<th>Bill Status</th>
+											<th>Bill Total</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr name="officebillsTableRow"
+											ng-repeat="b in bills | orderBy: '+date'" billId={{b.id}}>
+											<td name="billDateCell">{{b.date | date : 'MM/dd/yyyy'}}</td>
+											<td name="billStatusCell">{{b.status}}</td>
+											<td name="billCostCell">${{b.remainingCost}}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</body>
+</html>

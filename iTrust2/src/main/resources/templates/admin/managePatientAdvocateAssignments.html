@@ -1,0 +1,154 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="layout :: head(title=~{::title},links=~{})">
+<title>Manage Patient Advocate Assignments</title>
+</head>
+<body th:include="layout :: body" th:with="content=~{::content}">
+	<div th:fragment="content">
+
+		<script th:inline="javascript">
+		/* Otherwise Thymeleaf tries to parse Javascript as XML and breaks itself sometimes.  Sigh */
+		/*<![CDATA[*/
+			var app = angular.module("managePatientAdvocateAssignmentsApp", []);
+			app.controller('managePatientAdvocateAssignmentsCtrl', function($scope, $http) {
+				$scope.created = [];
+				$scope.reset = function() {
+					$scope.selectedPA = undefined;
+					$scope.selectedPat = undefined;
+					$http.get("/iTrust2/api/v1/personnel/getbyroles/ROLE_ADVOCATE").then(function(response) {
+						$scope.pas = response.data;
+						console.log(response.data)
+					}, function(rejection) {
+						console.error("Error while getting advocates.");
+					});	
+					
+					$http.get("/iTrust2/api/v1/patients").then(function(response) {
+						$scope.pats = response.data;
+						console.log(response.data)
+					}, function(rejection) {
+						console.error("Error while getting patients.");
+					});
+					
+					$http.get("/iTrust2/api/v1/assignments").then(function(response) {
+						$scope.created = response.data;
+						$scope.createdPats = new Set();
+						$scope.createdPAs = new Set();
+						$scope.patMap = new Map();
+						$scope.PAMap = new Map();
+						for (let i = 0; i < $scope.created.length; i++) {
+							var x = $scope.created[i];
+							if (!$scope.patMap.has(x.patient.username)) {
+								$scope.patMap.set(x.patient.username, new Array());
+							}
+							if (!$scope.PAMap.has(x.patientAdvocate.username)) {
+								$scope.PAMap.set(x.patientAdvocate.username, new Array());
+							}
+							$scope.patMap.get(x.patient.username).push(x.patientAdvocate.username);
+							$scope.PAMap.get(x.patientAdvocate.username).push(x.patient.username);
+							$scope.createdPAs.add(x.patientAdvocate.username)
+							$scope.createdPats.add(x.patient.username)
+						}
+						
+						console.log($scope.patMap);
+						console.log($scope.PAMap);
+						console.log($scope.createdPats);
+						console.log($scope.createdPAs);
+						
+						
+						console.log(response.data);
+						
+					}, function(rejection) {
+						console.error("Error while getting patients.");
+					});
+
+					
+				}
+				$scope.createAssoc = function() {
+					$scope.failure = false;
+					$scope.success = false;
+					if ($scope.selectedPA == undefined || $scope.selectedPat == undefined) {
+						$scope.failure = true;
+					} else {
+						var input = {
+								'patUsername': $scope.selectedPat,
+								'patadvUsername': $scope.selectedPA
+						}
+						$http.post("/iTrust2/api/v1/assignments/", input).then(function(response) {
+							$scope.pas = response.data;
+							console.log(response.data)
+							$scope.success = true;
+							$scope.reset();
+						}, function(rejection) {
+							console.error("Error while creating assignment.");
+							$scope.failure = true;
+						});	
+						
+					}
+					console.log($scope.selectedPA);
+					console.log($scope.selectedPat);
+					
+				};
+				$scope.reset();
+				
+				
+			});
+			
+			/*]]>*/
+		</script>
+
+		<div ng-app="managePatientAdvocateAssignmentsApp" ng-controller="managePatientAdvocateAssignmentsCtrl as c">
+			<!-- Info on tables from https://hello-angularjs.appspot.com/removetablerow -->
+			<h4 style="color: red" ng-model="message"></h4>
+
+			<h1>Assign Patient Advocate Patients</h1>
+			<table style="width: 100%">
+				<tr>
+					<td style="vertical-align: top">
+						<table class="table">
+							<tr>
+								<td><h3>Patient Advocate</h3></td>
+								<td><h3>Patient</h3></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><select ng-model="selectedPA">
+									<option ng-repeat="x in pas" ng-if="!selectedPat || (selectedPat && !(patMap.has(selectedPat)))">{{x.username}}</option>
+									<option ng-repeat="x in pas" ng-if="selectedPat && patMap.has(selectedPat) && !(patMap.get(selectedPat).includes(x.username))">{{x.username}}</option>
+								</select></td>
+								<td><select ng-model="selectedPat">
+									<option ng-repeat="x in pats" ng-if="!selectedPA || (selectedPA && !(PAMap.has(selectedPA)))">{{x.username}}</option>
+									<option ng-repeat="x in pats" ng-if="selectedPA && PAMap.has(selectedPA) && !(PAMap.get(selectedPA).includes(x.username))">{{x.username}}</option>
+								</select></td>
+								<td><input type="button" value="Create Association"
+									class="btn btn-primary" ng-click="createAssoc()" />
+									<div ng-show="success">Association created.</div>
+									<div ng-show="failure">Error with association.</div>
+									</td>
+								
+							</tr>
+						</table>
+					</td>
+					
+				</tr>
+				<tr>
+					<td style="vertical-align: top">
+						<table class="table">
+							<tr>
+							<h1>View Patient Advocate Assignments</h1>
+							</tr>
+							<tr>
+								<th>Patient Advocate</th>
+								<th>Patient</th>
+							</tr>
+							<tr ng-repeat="x in created">
+								<td>{{x.patientAdvocate.username}}</td>
+								<td>{{x.patient.username}}</td>
+							</tr>
+						</table>
+					</td>
+					
+				</tr>
+			</table>
+		</div>
+	</div>
+</body>
+</html>
