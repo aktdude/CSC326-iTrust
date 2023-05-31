@@ -1,6 +1,8 @@
 # iTrust2-v11
+Important! All class work was based off of https://github.com/ncsu-csc326/iTrust2 <br>
+Much of the code contained here is created by those listed above. We made only contributions related to Patient Advocates and Appointment Requests(described below) <br>
 This was a project developed in CSC326(Software Engineering) that mocks a hospital application.<br>
-This work was done by previous semesters and then during my semester was added onto even more by our team of 5 including:<br>
+This work was done by previous semesters by a multitude of NCSU students and then during my semester was added onto even more by our team of 5 including:<br>
 Alex Taylor<br>
 Srinath Vasudevan<br>
 Pavan Gandhi<br>
