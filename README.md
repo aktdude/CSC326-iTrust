@@ -9,6 +9,10 @@ Roman Peace<br>
 
 We added all information relevant and dealing with the Patient Advocate, which was a role on this mock website that assists patients who either may not be able to do certain things on their own, or are assigned an advocate for other reasons. We also added functionality for Appointment Requests in multiple areas of the website.
 
+The project is meant to be ran in Eclipse as a Maven Project. You also have to edit the application.yml folder based on the template.
+It should run on the following URL:
+http://localhost:8080/iTrust2
+
 *Line Coverage (should be >=70%)*
 
 ![Coverage](.github/badges/jacoco.svg)
