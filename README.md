@@ -11,9 +11,7 @@ Pavan Gandhi<br>
 Jeffrey Zeng<br>
 Roman Peace<br>
 
-We added all information relevant and dealing with the Patient Advocate, which was a role on this mock website that assists patients who either may not be able to do certain things on their own, or are assigned an advocate for other reasons. We also added functionality for Appointment Requests in multiple areas of the website. Below are some images that show the app in use.
-
-
+We added all information relevant and dealing with the Patient Advocate, which was a role on this mock website that assists patients who either may not be able to do certain things on their own, or are assigned an advocate for other reasons. We also added functionality for Appointment Requests in multiple areas of the website. Below are some images that show the app in use.<br><br>
 
 Creating the patient advocate role as an admin:
 ![iTrust2_1](https://github.com/alex-taylor458/CSC326-SoftwareEngineering/assets/40243091/4ca5561e-44fe-4069-86ee-f1bb5b11f7b2)
